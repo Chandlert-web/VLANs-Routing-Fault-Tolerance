@@ -1,0 +1,135 @@
+Problem Description
+
+After a new school wing was added to an existing campus, staff began reporting slow network performance, intermittent application timeouts, and occasional loss of connectivity during peak instructional hours.
+
+Initial Assessment (Design-Level Issue)
+
+This issue did not present as a single device failure. Symptoms were widespread and coincided with increased device count, indicating a scalability and segmentation problem, not a hardware outage.
+
+Step 1: Validate VLAN Segmentation
+Command
+show vlan brief
+
+Expected Output
+VLAN Name              Status    Ports
+---- ----------------- --------- -----------------------------
+10   Instructional     active    Gi1/0/1-48
+20   Administrative    active
+30   Guest             active
+
+Explanation
+
+All instructional and administrative devices are sharing VLAN 10
+
+Large broadcast domain increases congestion
+
+No separation between student and staff traffic
+
+Segmentation is insufficient for current scale
+
+Conclusion:
+The network was not segmented appropriately for growth.
+
+Step 2: Evaluate Routing and Gateway Design
+Command
+show ip route
+
+Expected Output
+Gateway of last resort is 172.16.1.1
+
+10.10.10.0/24 is directly connected, Vlan10
+0.0.0.0/0 via 172.16.1.1
+
+Explanation
+
+Single instructional subnet handling all traffic
+
+No additional routed VLANs to distribute load
+
+Routing design limits scalability
+
+Any issue in VLAN 10 impacts the entire school
+
+Design Insight:
+Routing was functional, but not scalable.
+
+Corrective Action: Improve Segmentation and Routing
+Design Changes Implemented
+
+Split instructional traffic into multiple VLANs
+
+Separated student and staff devices
+
+Introduced additional routed interfaces
+
+Planned redundancy at the gateway layer
+
+Step 3: Implement Improved VLAN Segmentation
+Configuration (Illustrative)
+vlan 10
+ name Instructional-Students
+vlan 40
+ name Instructional-Staff
+
+Verification
+show vlan brief
+
+VLAN Name                     Status    Ports
+---- ------------------------ --------- ---------------------
+10   Instructional-Students   active    Gi1/0/1-32
+40   Instructional-Staff      active    Gi1/0/33-48
+
+Explanation
+
+Broadcast domains reduced
+
+Traffic patterns are now predictable
+
+Troubleshooting scope is significantly smaller
+
+Step 4: Validate Routing Between VLANs (Scalability)
+Command
+show ip route
+
+Expected Output
+10.10.10.0/24 is directly connected, Vlan10
+10.10.40.0/24 is directly connected, Vlan40
+0.0.0.0/0 via 172.16.1.1
+
+Explanation
+
+Each VLAN has a dedicated routed interface
+
+New segments can be added without redesign
+
+Routing now supports growth instead of limiting it
+
+Step 5: Validate Fault Tolerance at the Gateway
+Command
+show standby brief
+
+Expected Output
+Interface   Grp  Pri  State   Active          Standby
+Vlan10      1    110  Active  local           10.10.10.2
+Vlan40      1    110  Active  local           10.10.40.2
+
+Explanation
+
+Redundant gateway in place
+
+Automatic failover enabled
+
+No single point of failure at Layer 3
+
+Resolution Summary
+Technical Summary
+
+The issue was caused by insufficient VLAN segmentation and a routing design that did not scale with increased device count. By segmenting traffic, improving routing structure, and introducing gateway redundancy, performance stabilized and future growth was supported.
+
+Non-Technical Summary
+
+The network grew, but it wasn’t organized to handle the increased demand. Separating traffic and adding backup paths allowed the network to operate smoothly again.
+
+Key Takeaway
+
+VLANs organize traffic, routing enables growth, and fault tolerance ensures continuity. All three must work together for large education networks to scale reliably.
